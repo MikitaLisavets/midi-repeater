@@ -1,6 +1,6 @@
 #include "MIDIUSB.h"
 
-byte activeChannel;
+int activeChannel = -1;
 byte channel;
 byte note;
 byte velocity;
@@ -21,24 +21,31 @@ void controlChange(byte channel, byte control, byte value) {
 }
 
 void setup() {
-  Serial.begin(115200);
 }
-
 
 void loop() {
   midiEventPacket_t rx;
   do {
     rx = MidiUSB.read();
+    // check only ON and OFF note events
     if (rx.header != 0 && (rx.header == 0x09 || rx.header == 0x08)) {
-      channel = rx.header == 0x09 ? 0x90 ^ rx.byte1 : 0x80 ^ rx.byte1;
-      note = rx.byte2;
-      velocity = rx.byte3;
-      if (rx.header == 0x09 && activeChannel != channel) {
-        activeChannel = channel;
-        noteOn(2, note, velocity);   
+      channel = rx.header == 0x09 ? 0x90 ^ rx.byte1 : 0x80 ^ rx.byte1; // channel: 0 - 15
+      note = rx.byte2; // note: 0 - 255
+      velocity = rx.byte3; // velocity: 0 - 127
+      if (rx.header == 0x09) {
+        // set active channel as first event's channel
+        if (activeChannel < 0) activeChannel = channel;
+        if (channel == activeChannel) {
+          // send midi ON event to selected channel/s
+          noteOn(15, note, velocity);  
+        }   
       } else if (rx.header == 0x08) {
-        activeChannel = -1;
-        noteOff(2, note, velocity);
+        if (channel == activeChannel) {
+          // reset active channel
+          activeChannel = -1;
+          // send midi OFF event to selected channel/s
+          noteOff(15, note, velocity);
+        }
       }
       MidiUSB.flush();
     }
