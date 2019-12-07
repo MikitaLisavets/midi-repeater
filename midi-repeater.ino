@@ -37,15 +37,15 @@ void loop() {
         if (activeChannel < 0) activeChannel = channel;
         if (channel == activeChannel) {
           // send midi ON event to selected channel/s
-          noteOn(1, note, velocity);  
+          noteOn((activeChannel + 8) % 16, note, velocity);  
         }   
       } else if (rx.header == 0x08) {
         if (channel == activeChannel) {
           // reset active channel
           activeChannel = -1;
-          // send midi OFF event to selected channel/s
-          noteOff(1, note, velocity);
         }
+        // send midi OFF event to selected channel/s
+        noteOff((activeChannel + 8) % 16, note, velocity);
       }
       MidiUSB.flush();
     }
