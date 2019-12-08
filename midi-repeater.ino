@@ -1,9 +1,11 @@
 #include "MIDIUSB.h"
 
+int channelCount = 16; 
 int activeChannel = -1;
 byte channel;
 byte note;
 byte velocity;
+
 
 void noteOn(byte channel, byte pitch, byte velocity) {
   midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
@@ -37,15 +39,20 @@ void loop() {
         if (activeChannel < 0) activeChannel = channel;
         if (channel == activeChannel) {
           // send midi ON event to selected channel/s
-          noteOn((activeChannel + 8) % 16, note, velocity);  
+          noteOn((activeChannel + 1) % channelCount, note, velocity);
+          noteOn((activeChannel + 2) % channelCount, note, velocity);
         }   
       } else if (rx.header == 0x08) {
+
         if (channel == activeChannel) {
           // reset active channel
           activeChannel = -1;
+
+//          // send midi OFF event to all channels
+          for (int i = 0; i < channelCount; i++) {
+             noteOff(i, note, velocity); 
+          }
         }
-        // send midi OFF event to selected channel/s
-        noteOff((activeChannel + 8) % 16, note, velocity);
       }
       MidiUSB.flush();
     }
